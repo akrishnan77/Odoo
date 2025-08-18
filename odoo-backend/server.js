@@ -7,10 +7,15 @@ app.use(cors());
 app.use(express.json());
 
 // Odoo server config
-const ODOO_URL = 'https://groupnet1.odoo.com'; // Change to your Odoo server URL
-const ODOO_DB = 'groupnet1'; // Change to your Odoo DB name
-const ODOO_USERNAME = 'akrishnan77@outlook.com'; // Change to your Odoo username
+const ODOO_URL = 'http://localhost:8069'; // Change to your Odoo server URL
+const ODOO_DB = 'Enterprise'; // Change to your Odoo DB name
+const ODOO_USERNAME = 'anand.krishnan20@harman.com'; // Change to your Odoo username
 const ODOO_PASSWORD = 'Anandk@1977'; // Change to your Odoo password
+
+//const ODOO_URL = 'https://groupnet1.odoo.com'; // Change to your Odoo server URL
+//const ODOO_DB = 'groupnet1'; // Change to your Odoo DB name
+//const ODOO_USERNAME = 'akrishnan77@outlook.com'; // Change to your Odoo username
+//const ODOO_PASSWORD = 'Anandk@1977'; // Change to your Odoo password
 
 
 // Helper: Authenticate and get session cookie
@@ -44,13 +49,12 @@ app.get('/api/project-tasks/:id', async (req, res) => {
         kwargs: {}
       }
     };
-    console.log(`[API CALL] GET /api/project-tasks/${req.params.id}`);
-    console.log('Odoo request payload:', JSON.stringify(payload, null, 2));
+  // ...existing code...
     const odooRes = await axios.post(url, payload, {
       headers: { Cookie: cookies },
       withCredentials: true
     });
-    console.log('Odoo raw response:', JSON.stringify(odooRes.data, null, 2));
+  // ...existing code...
     if (odooRes.data && Array.isArray(odooRes.data.result) && odooRes.data.result.length > 0) {
       const t = odooRes.data.result[0];
       let desc = t.description;
@@ -63,20 +67,86 @@ app.get('/api/project-tasks/:id', async (req, res) => {
         priority: t.priority || '',
         stage_id: t.stage_id || ''
       };
-      console.log('Formatted task:', JSON.stringify(formattedTask, null, 2));
+  // ...existing code...
       res.json(formattedTask);
     } else {
-       console.error('Task not found for id', req.params.id);
+  // ...existing code...
       res.status(404).json({ error: 'Task not found' });
     }
   } catch (err) {
-     console.error(`Error in /api/project-tasks/${req.params.id}:`, err);
+  // ...existing code...
     res.status(500).json({ error: err.message });
   }
 });
 app.get('/api/project-tasks', async (req, res) => {
   try {
     const cookies = await getOdooSession();
+
+    // 1. Read open maintenance requests
+    const maintUrl = `${ODOO_URL}/web/dataset/call_kw/maintenance.request/search_read`;
+    const maintPayload = {
+      params: {
+        model: 'maintenance.request',
+        method: 'search_read',
+        args: [[['stage_id.name', 'in', ['New Request', 'In Progress']]], ['id', 'name', 'description', 'stage_id']],
+        kwargs: {}
+      }
+    };
+    const maintRes = await axios.post(maintUrl, maintPayload, {
+      headers: { Cookie: cookies },
+      withCredentials: true
+    });
+
+  // ...existing code...
+
+    // 2. For each open maintenance request, create a project task if not already created
+    if (maintRes.data && Array.isArray(maintRes.data.result)) {
+      for (const req of maintRes.data.result) {
+  // ...existing code...
+        // Check if a project task already exists for this maintenance request (by name)
+        const checkTaskUrl = `${ODOO_URL}/web/dataset/call_kw/project.task/search_read`;
+        const checkTaskPayload = {
+          params: {
+            model: 'project.task',
+            method: 'search_read',
+            args: [[['name', '=', `Maintenance: ${req.name}`]], ['id']],
+            kwargs: {}
+          }
+        };
+        const checkTaskRes = await axios.post(checkTaskUrl, checkTaskPayload, {
+          headers: { Cookie: cookies },
+          withCredentials: true
+        });
+  // ...existing code...
+        if (!checkTaskRes.data || !Array.isArray(checkTaskRes.data.result) || checkTaskRes.data.result.length === 0) {
+          // Create the project task
+          const createTaskUrl = `${ODOO_URL}/web/dataset/call_kw/project.task/create`;
+          // Only use description from maintenance request
+          let description = req.description || '';
+          // ...existing code...
+          const createTaskPayload = {
+            params: {
+              model: 'project.task',
+              method: 'create',
+              args: [{
+                name: `Maintenance: ${req.name}`,
+                description,
+                // Optionally set other fields
+              }],
+              kwargs: {}
+            }
+          };
+          // ...existing code...
+          await axios.post(createTaskUrl, createTaskPayload, {
+            headers: { Cookie: cookies },
+            withCredentials: true
+          });
+          // ...existing code...
+        }
+      }
+    }
+
+    // 3. Return all project tasks as before
     const url = `${ODOO_URL}/web/dataset/call_kw/project.task/search_read`;
     const payload = {
       params: {
@@ -93,10 +163,10 @@ app.get('/api/project-tasks', async (req, res) => {
       withCredentials: true
     });
     if (odooRes.data && Array.isArray(odooRes.data.result)) {
-      // Format for frontend: map name, description, date_deadline, priority
-      const formattedTasks = odooRes.data.result.map(t => {
+      let formattedTasks = odooRes.data.result.map(t => {
         let desc = t.description;
         if (typeof desc !== 'string') desc = '';
+  // ...existing code...
         return {
           id: t.id,
           name: t.name || 'Project Task',
@@ -106,13 +176,20 @@ app.get('/api/project-tasks', async (req, res) => {
           stage_id: t.stage_id || ''
         };
       });
+      // Sort by due date (date_deadline), empty dates go last
+      formattedTasks = formattedTasks.sort((a, b) => {
+        if (!a.date_deadline && !b.date_deadline) return 0;
+        if (!a.date_deadline) return 1;
+        if (!b.date_deadline) return -1;
+        return new Date(a.date_deadline) - new Date(b.date_deadline);
+      });
       res.json(formattedTasks);
     } else {
-        console.error('Unexpected Odoo response', odooRes.data);
+  // ...existing code...
       res.status(500).json({ error: 'Unexpected Odoo response', response: odooRes.data });
     }
   } catch (err) {
-        console.error('Error in /api/project-tasks:', err);
+  // ...existing code...
     res.status(500).json({ error: err.message });
   }
 });
@@ -143,19 +220,19 @@ app.post('/api/project-tasks', async (req, res) => {
         kwargs: {}
       }
     };
-    console.log('[API CALL] POST /api/project-tasks', JSON.stringify(payload, null, 2));
+  // ...existing code...
     const odooRes = await axios.post(url, payload, {
       headers: { Cookie: cookies },
       withCredentials: true
     });
-    console.log('Odoo create response:', JSON.stringify(odooRes.data, null, 2));
+  // ...existing code...
     if (odooRes.data && odooRes.data.result) {
       res.json({ id: odooRes.data.result });
     } else {
       res.status(500).json({ error: 'Failed to create task', response: odooRes.data });
     }
   } catch (err) {
-    console.error('Error in POST /api/project-tasks:', err);
+  // ...existing code...
     res.status(500).json({ error: err.message });
   }
 });

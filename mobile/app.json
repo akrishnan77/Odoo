@@ -14,9 +14,11 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
+    
     "assetBundlePatterns": [
       "**/*"
     ],
+
   "ios": { "supportsTablet": true, "bundleIdentifier": "com.connectiq.app" },
     "android": {
       "package": "com.connectiq.app",
@@ -33,9 +35,9 @@
       "bundler": "metro"
     },
     "extra": {
-      "msClientId": "7a2699af-1a84-4306-80ee-08339d714d2c",
-      "tenant": "common",
-      "scopes": ["User.Read", "Tasks.ReadWrite", "Files.ReadWrite"],
+      "msClientId": "f6a9843a-5e99-41a5-88f1-34466204cb13",
+      "tenant": "e4e92fef-2d65-4067-b53d-79120c33e2f3",
+      "scopes": ["User.Read"],
       "redirectScheme": "connectiq",
   "redirectPath": "auth"  
     }

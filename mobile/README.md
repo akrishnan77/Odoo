@@ -47,3 +47,5 @@ To force an exp:// redirect (Expo Go), set in `app.json` under `expo.extra`:
 ```
 
 When `expRedirectUri` is set, the app will use it and disable the proxy.
+
+## npm start

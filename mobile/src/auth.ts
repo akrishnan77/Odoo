@@ -3,8 +3,10 @@ import Constants from 'expo-constants';
 import { makeRedirectUri } from 'expo-auth-session';
 
 const extra: any = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
-const MS_CLIENT_ID = extra.msClientId as string;
-const TENANT = extra.tenant || 'common';
+console.log('DEBUG extra:', extra);
+console.log('DEBUG TENANT:', extra.tenant);
+const MS_CLIENT_ID = 'f6a9843a-5e99-41a5-88f1-34466204cb13';
+const TENANT = 'e4e92fef-2d65-4067-b53d-79120c33e2f3';  
 const SCOPES: string[] = Array.isArray(extra.scopes) ? extra.scopes : String(extra.scopes || 'User.Read').split(',');
 const REDIRECT_SCHEME = extra.redirectScheme || 'connectiq';
 const REDIRECT_PATH = extra.redirectPath || 'auth';
@@ -23,8 +25,10 @@ export async function getTokenAsync(): Promise<string> {
   // - Otherwise: Expo Go uses Expo Auth Proxy (Azure redirect should be https://auth.expo.io/@anonymous/<slug>),
   //   and dev client/standalone uses native scheme connectiq://auth (no proxy).
   let redirectUri = makeRedirectUri({ scheme: REDIRECT_SCHEME, path: REDIRECT_PATH });
-  let useProxy = isExpoGo;  
-    console.log('Native scheme redirect URI:', redirectUri);
+  let useProxy = isExpoGo;
+  const authorityUrl = `https://login.microsoftonline.com/${TENANT}`;
+  console.log('Native scheme redirect URI:', redirectUri);
+  console.log('Authority URL:', authorityUrl);
   
 
   const request = new AuthSession.AuthRequest({
@@ -33,6 +37,9 @@ export async function getTokenAsync(): Promise<string> {
     scopes: SCOPES,
     redirectUri,
     usePKCE: true,
+    extraParams: {
+      login_hint: 'anand.krishnan20@harman.com',
+    },
   });
 
   await request.makeAuthUrlAsync(discovery);
