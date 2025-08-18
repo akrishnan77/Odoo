@@ -1,6 +1,6 @@
 export async function getOdooTaskById(id: string): Promise<any> {
   try {
-    const url = `http://10.0.2.2:4000/api/project-tasks/${id}`;
+  const url = `http://10.0.2.2:8000/api/project-tasks/${id}`;
     console.log('[FRONTEND] API CALL:', url);
     const response = await fetch(url);
     const text = await response.text();
@@ -25,7 +25,7 @@ export async function getOdooTaskById(id: string): Promise<any> {
 }
 export async function getOdooTasks(): Promise<any[]> {
   try {
-    const url = 'http://10.0.2.2:4000/api/project-tasks';
+  const url = 'http://10.0.2.2:8000/api/project-tasks';
     console.log('API CALL:', url);
     const response = await fetch(url);
     const text = await response.text();

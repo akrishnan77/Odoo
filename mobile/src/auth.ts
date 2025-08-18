@@ -3,8 +3,6 @@ import Constants from 'expo-constants';
 import { makeRedirectUri } from 'expo-auth-session';
 
 const extra: any = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
-console.log('DEBUG extra:', extra);
-console.log('DEBUG TENANT:', extra.tenant);
 const MS_CLIENT_ID = 'f6a9843a-5e99-41a5-88f1-34466204cb13';
 const TENANT = 'e4e92fef-2d65-4067-b53d-79120c33e2f3';  
 const SCOPES: string[] = Array.isArray(extra.scopes) ? extra.scopes : String(extra.scopes || 'User.Read').split(',');
@@ -29,7 +27,7 @@ export async function getTokenAsync(): Promise<string> {
   const authorityUrl = `https://login.microsoftonline.com/${TENANT}`;
   console.log('Native scheme redirect URI:', redirectUri);
   console.log('Authority URL:', authorityUrl);
-  
+  console.log('Scopes:', SCOPES);
 
   const request = new AuthSession.AuthRequest({
     clientId: MS_CLIENT_ID,

@@ -1,0 +1,211 @@
+from fastapi import FastAPI, HTTPException, Request, Body, Path
+import requests
+
+app = FastAPI()
+
+# Dedicated endpoint for creating a project task
+from fastapi import Body
+@app.post("/api/create-task")
+async def create_task(
+    name: str = Body(...),
+    description: str = Body(""),
+    date_deadline: str = Body("") ,
+    priority: str = Body("1")
+):
+    cookies = get_odoo_session()
+    url = f"{ODOO_URL}/web/dataset/call_kw/project.task/create"
+    odoo_priority = '1'
+    if priority == 'low':
+        odoo_priority = '0'
+    elif priority == 'high':
+        odoo_priority = '2'
+    payload = {
+        "params": {
+            "model": "project.task",
+            "method": "create",
+            "args": [{
+                "name": name,
+                "description": description,
+                "date_deadline": date_deadline,
+                "priority": odoo_priority
+            }],
+            "kwargs": {}
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    if res.status_code == 200 and res.json().get('result'):
+        return {"id": res.json()['result']}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create task")
+
+# Minimal health check endpoint
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# Allow direct execution for debugging
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+@app.get("/api/project-tasks/{task_id}")
+def get_project_task_by_id(task_id: str = Path(...)):
+    cookies = get_odoo_session()
+    # If activity, parse id
+    if task_id.startswith("activity-"):
+        try:
+            activity_id = int(task_id.replace("activity-", ""))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid activity id format")
+        activity_url = f"{ODOO_URL}/web/dataset/call_kw/mail.activity/search_read"
+        activity_payload = {
+            "params": {
+                "model": "mail.activity",
+                "method": "search_read",
+                "args": [[['id', '=', activity_id]], ['id', 'activity_type_id', 'summary', 'date_deadline', 'user_id', 'res_model', 'res_id']],
+                "kwargs": {}
+            }
+        }
+        act_res = requests.post(activity_url, json=activity_payload, cookies=cookies)
+        if act_res.status_code == 200:
+            act_result = act_res.json().get("result", [])
+            if act_result:
+                a = act_result[0]
+                return {
+                    "id": f"activity-{a['id']}",
+                    "name": f"Activity: {a.get('summary', '')}",
+                    "description": f"Assigned to: {a.get('user_id', [''])[1] if a.get('user_id') else ''}",
+                    "date_deadline": a.get('date_deadline', ''),
+                    "priority": '',
+                    "stage_id": '',
+                    "res_model": a.get('res_model', ''),
+                    "res_id": a.get('res_id', '')
+                }
+        raise HTTPException(status_code=404, detail="Activity not found")
+    # Otherwise, treat as project.task
+    try:
+        project_task_id = int(task_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid project task id format")
+    url = f"{ODOO_URL}/web/dataset/call_kw/project.task/search_read"
+    payload = {
+        "params": {
+            "model": "project.task",
+            "method": "search_read",
+            "args": [[['id', '=', project_task_id]], ['id', 'name', 'description', 'stage_id', 'date_deadline', 'priority']],
+            "kwargs": {}
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    if res.status_code == 200:
+        result = res.json().get("result", [])
+        if result:
+            t = result[0]
+            desc = t.get('description', '') or ''
+            return {
+                "id": t.get('id'),
+                "name": t.get('name', 'Project Task'),
+                "description": desc,
+                "date_deadline": t.get('date_deadline', ''),
+                "priority": t.get('priority', ''),
+                "stage_id": t.get('stage_id', '')
+            }
+    raise HTTPException(status_code=404, detail="Task not found")
+
+ODOO_URL = "http://localhost:8069"
+ODOO_DB = "Enterprise"
+ODOO_USERNAME = "anand.krishnan20@harman.com"
+ODOO_PASSWORD = "Anandk@1977"
+
+def get_odoo_session():
+    url = f"{ODOO_URL}/web/session/authenticate"
+    payload = {
+        "params": {
+            "db": ODOO_DB,
+            "login": ODOO_USERNAME,
+            "password": ODOO_PASSWORD
+        }
+    }
+    res = requests.post(url, json=payload)
+    if res.status_code != 200:
+        raise HTTPException(status_code=500, detail="Odoo auth failed")
+    cookies = res.cookies.get_dict()
+    return cookies
+
+@app.get("/api/project-tasks")
+def get_project_tasks():
+    cookies = get_odoo_session()
+    url = f"{ODOO_URL}/web/dataset/call_kw/project.task/search_read"
+    # Get all project tasks
+    payload = {
+        "params": {
+            "model": "project.task",
+            "method": "search_read",
+            "args": [[]],
+            "kwargs": {
+                "fields": ["id", "name", "description", "stage_id", "date_deadline", "priority"]
+            }
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    if res.status_code != 200:
+        raise HTTPException(status_code=500, detail="Odoo API error")
+    tasks = res.json().get("result", [])
+    # Fetch all 'to do' activities from mail.activity
+    activity_url = f"{ODOO_URL}/web/dataset/call_kw/mail.activity/search_read"
+    activity_payload = {
+        "params": {
+            "model": "mail.activity",
+            "method": "search_read",
+            "args": [[], ['id', 'activity_type_id', 'summary', 'date_deadline', 'user_id', 'res_model', 'res_id']],
+            "kwargs": {}
+        }
+    }
+    act_res = requests.post(activity_url, json=activity_payload, cookies=cookies)
+    activities = []
+    if act_res.status_code == 200 and isinstance(act_res.json().get('result', None), list):
+        for a in act_res.json()['result']:
+            activities.append({
+                "id": f"activity-{a['id']}",
+                "name": f"Activity: {a.get('summary', '')}",
+                "description": f"Assigned to: {a.get('user_id', [''])[1] if a.get('user_id') else ''}",
+                "date_deadline": a.get('date_deadline', ''),
+                "priority": '',
+                "stage_id": '',
+                "res_model": a.get('res_model', ''),
+                "res_id": a.get('res_id', '')
+            })
+    # Sort by due date
+    def sort_key(t):
+        return t.get('date_deadline') or '9999-12-31'
+    all_tasks = tasks + activities
+    all_tasks = sorted(all_tasks, key=sort_key)
+    return all_tasks
+@app.post("/api/project-tasks")
+async def create_project_task(request: Request):
+    body = await request.json()
+    cookies = get_odoo_session()
+    url = f"{ODOO_URL}/web/dataset/call_kw/project.task/create"
+    # Map frontend priority to Odoo values
+    odoo_priority = '1'
+    if body.get('priority') == 'low':
+        odoo_priority = '0'
+    elif body.get('priority') == 'high':
+        odoo_priority = '2'
+    payload = {
+        "params": {
+            "model": "project.task",
+            "method": "create",
+            "args": [{
+                "name": body.get('name'),
+                "description": body.get('description'),
+                "date_deadline": body.get('date_deadline'),
+                "priority": odoo_priority
+            }],
+            "kwargs": {}
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    if res.status_code == 200 and res.json().get('result'):
+        return {"id": res.json()['result']}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create task")

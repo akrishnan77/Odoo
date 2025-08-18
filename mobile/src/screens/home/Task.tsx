@@ -19,7 +19,7 @@ export default function TaskScreen({ token, onOpenTask, onSignOut }: { token: st
     setCreateError(null);
     try {
       // Call backend API to create task
-      const res = await fetch('http://10.0.2.2:4000/api/project-tasks', {
+  const res = await fetch('http://10.0.2.2:8000/api/create-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

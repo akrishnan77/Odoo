@@ -1,0 +1,1 @@
+This folder contains the old Node.js backend. It was moved here for backup before deletion.
