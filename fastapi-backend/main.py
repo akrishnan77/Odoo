@@ -117,7 +117,7 @@ def get_project_task_by_id(task_id: str = Path(...)):
             "params": {
                 "model": "mail.activity",
                 "method": "search_read",
-                "args": [[['id', '=', activity_id]], ['id', 'activity_type_id', 'summary', 'date_deadline', 'user_id', 'res_model', 'res_id']],
+                "args": [[['id', '=', activity_id]], ['id', 'activity_type_id', 'summary', 'date_deadline', 'user_id', 'res_model', 'res_id','res_name']],
                 "kwargs": {}
             }
         }
@@ -134,7 +134,8 @@ def get_project_task_by_id(task_id: str = Path(...)):
                     "priority": '',
                     "stage_id": '',
                     "res_model": a.get('res_model', ''),
-                    "res_id": a.get('res_id', '')
+                    "res_id": a.get('res_id', ''),
+                    "res_name": a.get('res_name', '')
                 }
         raise HTTPException(status_code=404, detail="Activity not found")
     # Otherwise, treat as project.task
@@ -212,7 +213,7 @@ def get_project_tasks():
         "params": {
             "model": "mail.activity",
             "method": "search_read",
-            "args": [[], ['id', 'activity_type_id', 'summary', 'date_deadline', 'user_id', 'res_model', 'res_id']],
+            "args": [[], ['id', 'activity_type_id', 'summary', 'date_deadline', 'user_id', 'res_model', 'res_id', 'res_name']],
             "kwargs": {}
         }
     }
@@ -228,7 +229,8 @@ def get_project_tasks():
                 "priority": '',
                 "stage_id": '',
                 "res_model": a.get('res_model', ''),
-                "res_id": a.get('res_id', '')
+                "res_id": a.get('res_id', ''),
+                "res_name": a.get('res_name', '')
             })
     # Sort by due date
     def sort_key(t):

@@ -435,9 +435,23 @@ export default function TaskDetail({ route, navigation }: any) {
               <Image source={TitleIcon} style={styles.titleIcon} />
             </View>
             <View style={styles.statusPriorityRow}>
-              <Text style={[styles.status, { color: getStatusColor(task.status) }]}>
+              <Text style={[styles.status, { color: getStatusColor(task.status) }]}> 
                 {getStatusText(task.status)}
               </Text>
+              
+              {/* ACT Button for product.template, between status and priority */}
+              {task.res_model === 'product.template' && (
+                (() => { console.log('ACT button block entered', task); return (
+                  <View style={{ marginLeft: 12 }}>
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#5B57C7', paddingVertical: 6, paddingHorizontal: 18, borderRadius: 8 }}
+                      onPress={() => navigation.navigate('Inventory', { productId: task.res_id, productName: task.res_name })}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>ACT</Text>
+                    </TouchableOpacity>
+                  </View>
+                ); })()
+              )}
               <View style={styles.priorityChip}>
                 <Text style={[styles.priorityText, getPriorityColor(task.importance)]}>
                   {getPriorityText(task.importance)}

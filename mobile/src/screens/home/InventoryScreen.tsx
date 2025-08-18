@@ -8,7 +8,11 @@ type Product = {
   default_code?: string;
 };
 
-export default function InventoryScreen() {
+
+export default function InventoryScreen({ route }: any) {
+  const productId = route?.params?.productId;
+  const productName = route?.params?.productName;
+  // ...existing code...
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -18,6 +22,24 @@ export default function InventoryScreen() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (products.length > 0) {
+      let prod: Product | undefined;
+      if (productName) {
+        // Only compare trimmed names outside brackets
+        const compareName = productName.replace(/\s*\[.*?\]/g, '').trim();
+        prod = products.find(p => p.name.replace(/\s*\[.*?\]/g, '').trim() === compareName);
+      }
+      if (!prod && productId) {
+        prod = products.find(p => p.id === productId || p.id === Number(productId));
+      }
+      if (prod) {
+        setSelectedProduct(prod);
+        setQuantity(String(prod.qty_available));
+      }
+    }
+  }, [productId, products]);
 
   async function fetchProducts() {
     setLoading(true);

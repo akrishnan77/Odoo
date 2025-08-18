@@ -1,13 +1,10 @@
 export async function getOdooTaskById(id: string): Promise<any> {
   try {
-  const url = `http://10.0.2.2:8000/api/project-tasks/${id}`;
-    console.log('[FRONTEND] API CALL:', url);
+    const url = `http://10.0.2.2:8000/api/project-tasks/${id}`;
     const response = await fetch(url);
     const text = await response.text();
-    console.log('[FRONTEND] API RESPONSE:', text);
     if (!response.ok) throw new Error('Odoo task error: ' + response.status);
     const task = JSON.parse(text);
-    console.log('[FRONTEND] Parsed Task:', task);
     return {
       id: task.id || task.task_id || task._id,
       title: task.name || task.title,
@@ -16,6 +13,9 @@ export async function getOdooTaskById(id: string): Promise<any> {
       dueDateTime: task.date_deadline ? { dateTime: task.date_deadline } : undefined,
       description: task.description,
       assignedTo: task.user_id ? task.user_id[1] : undefined,
+  res_model: task.res_model,
+  res_id: task.res_id,
+  res_name: task.res_name,
       // Add other mappings as needed
     };
   } catch (err) {
@@ -25,11 +25,9 @@ export async function getOdooTaskById(id: string): Promise<any> {
 }
 export async function getOdooTasks(): Promise<any[]> {
   try {
-  const url = 'http://10.0.2.2:8000/api/project-tasks';
-    console.log('API CALL:', url);
+    const url = 'http://10.0.2.2:8000/api/project-tasks';
     const response = await fetch(url);
     const text = await response.text();
-    console.log('API RESPONSE:', text);
     if (!response.ok) throw new Error('Odoo tasks error: ' + response.status);
     const data = JSON.parse(text);
     // Map Odoo fields to MS Graph-like fields for UI compatibility
@@ -41,6 +39,9 @@ export async function getOdooTasks(): Promise<any[]> {
       dueDateTime: task.date_deadline ? { dateTime: task.date_deadline } : undefined,
       description: task.description,
       assignedTo: task.user_id ? task.user_id[1] : undefined,
+  res_model: task.res_model,
+  res_id: task.res_id,
+  res_name: task.res_name,
       // Add other mappings as needed
     }));
   } catch (err) {
