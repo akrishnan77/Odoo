@@ -14,6 +14,7 @@ import ComingSoon from './src/screens/home/ComingSoon';
 import TaskScreen from './src/screens/home/Task';
 import TaskDetail from './src/screens/home/TaskDetail';
 import Learning from './src/screens/home/Learning';
+import InventoryScreen from './src/screens/home/InventoryScreen';
 import { FloatingButtonAdd } from './src/ui/FloatingButton';
 import { getData, saveData, KEY } from './src/utils/LocalStorage';
 import { DEFAULT_USER_ROLE } from './src/utils/AppConstants';
@@ -23,6 +24,7 @@ type RootStackParamList = {
   Tabs: undefined;
   TaskDetails: { id: string; title?: string };
   ComingSoon: { title?: string } | undefined;
+  Inventory: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -175,8 +177,9 @@ export default function App() {
               userName={user?.displayName}
               onSelect={(index: number, title: string) => {
                 if (index === 0) {
-                  // Workforce Management -> enter tabbed app
                   nav.navigate('Tabs');
+                } else if (title === 'Inventory') {
+                  nav.navigate('Inventory');
                 } else {
                   nav.navigate('ComingSoon', { title });
                 }
@@ -184,6 +187,7 @@ export default function App() {
             />
           )}
         </Stack.Screen>
+  <Stack.Screen name="Inventory" component={InventoryScreen} />
         <Stack.Screen name="Tabs">
           {() => (
             <Tabs.Navigator

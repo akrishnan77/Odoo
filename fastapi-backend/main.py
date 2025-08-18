@@ -1,14 +1,70 @@
 from fastapi import FastAPI, HTTPException, Request, Body, Path
 import requests
-
 app = FastAPI()
 
+# List all products
+@app.get("/api/products")
+def get_products():
+    cookies = get_odoo_session()
+    url = f"{ODOO_URL}/web/dataset/call_kw/product.product/search_read"
+    payload = {
+        "params": {
+            "model": "product.product",
+            "method": "search_read",
+            "args": [[]],
+            "kwargs": {
+                "fields": ["id", "name", "qty_available", "default_code"]
+            }
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    if res.status_code != 200:
+        raise HTTPException(status_code=500, detail="Odoo API error")
+    return res.json().get("result", [])
+
+# Update product quantity
+@app.post("/api/products/{product_id}/update-quantity")
+async def update_product_quantity(product_id: int, quantity: float = Body(...)):
+    cookies = get_odoo_session()
+    # Odoo best practice: update stock via stock.quant
+    # Find quant for product
+    quant_url = f"{ODOO_URL}/web/dataset/call_kw/stock.quant/search_read"
+    quant_payload = {
+        "params": {
+            "model": "stock.quant",
+            "method": "search_read",
+            "args": [[['product_id', '=', product_id]]],
+            "kwargs": {
+                "fields": ["id", "product_id", "quantity"]
+            }
+        }
+    }
+    quant_res = requests.post(quant_url, json=quant_payload, cookies=cookies)
+    if quant_res.status_code != 200 or not quant_res.json().get("result"):
+        raise HTTPException(status_code=404, detail="Stock quant not found for product")
+    quant = quant_res.json()["result"][0]
+    quant_id = quant["id"]
+    # Update quant quantity
+    update_url = f"{ODOO_URL}/web/dataset/call_kw/stock.quant/write"
+    update_payload = {
+        "params": {
+            "model": "stock.quant",
+            "method": "write",
+            "args": [[quant_id], {"quantity": quantity}],
+            "kwargs": {}
+        }
+    }
+    update_res = requests.post(update_url, json=update_payload, cookies=cookies)
+    if update_res.status_code == 200 and update_res.json().get("result"):
+        return {"success": True, "product_id": product_id, "quantity": quantity}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to update quantity")
+
 # Dedicated endpoint for creating a project task
-from fastapi import Body
 @app.post("/api/create-task")
 async def create_task(
     name: str = Body(...),
-    description: str = Body(""),
+    description: str = Body("") ,
     date_deadline: str = Body("") ,
     priority: str = Body("1")
 ):
