@@ -1,6 +1,6 @@
 export async function getOdooTaskById(id: string): Promise<any> {
   try {
-    const url = `http://10.0.2.2:8000/api/project-tasks/${id}`;
+  const url = `http://10.0.2.2:8000/api/project-tasks/${id}`;
     const response = await fetch(url);
     const text = await response.text();
     if (!response.ok) throw new Error('Odoo task error: ' + response.status);
@@ -25,7 +25,7 @@ export async function getOdooTaskById(id: string): Promise<any> {
 }
 export async function getOdooTasks(): Promise<any[]> {
   try {
-    const url = 'http://10.0.2.2:8000/api/project-tasks';
+  const url = 'http://10.0.2.2:8000/api/project-tasks';
     const response = await fetch(url);
     const text = await response.text();
     if (!response.ok) throw new Error('Odoo tasks error: ' + response.status);

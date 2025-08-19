@@ -168,7 +168,7 @@ def get_project_task_by_id(task_id: str = Path(...)):
             }
     raise HTTPException(status_code=404, detail="Task not found")
 
-ODOO_URL = "http://localhost:8069"
+ODOO_URL = "http://192.168.0.105:8069"
 ODOO_DB = "Enterprise"
 ODOO_USERNAME = "anand.krishnan20@harman.com"
 ODOO_PASSWORD = "Anandk@1977"

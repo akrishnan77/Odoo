@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Button, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
+import { colors, typography } from '../../theme';
+import { Toolbar } from '../../ui/Toolbar';
 
 type Product = {
   id: number;
@@ -9,15 +11,15 @@ type Product = {
 };
 
 
-export default function InventoryScreen({ route }: any) {
+export default function InventoryScreen({ route, navigation }: any) {
   const productId = route?.params?.productId;
   const productName = route?.params?.productName;
-  // ...existing code...
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -26,10 +28,12 @@ export default function InventoryScreen({ route }: any) {
   useEffect(() => {
     if (products.length > 0) {
       let prod: Product | undefined;
+      let shouldOpenModal = false;
       if (productName) {
         // Only compare trimmed names outside brackets
         const compareName = productName.replace(/\s*\[.*?\]/g, '').trim();
         prod = products.find(p => p.name.replace(/\s*\[.*?\]/g, '').trim() === compareName);
+        if (prod) shouldOpenModal = true;
       }
       if (!prod && productId) {
         prod = products.find(p => p.id === productId || p.id === Number(productId));
@@ -37,6 +41,7 @@ export default function InventoryScreen({ route }: any) {
       if (prod) {
         setSelectedProduct(prod);
         setQuantity(String(prod.qty_available));
+        if (shouldOpenModal) setShowUpdateModal(true);
       }
     }
   }, [productId, products]);
@@ -65,6 +70,7 @@ export default function InventoryScreen({ route }: any) {
       const result = await response.json();
       if (result.success) {
         setMessage('Quantity updated successfully');
+        setShowUpdateModal(false); // Close popup immediately after update
         fetchProducts();
       } else {
         setMessage('Failed to update quantity');
@@ -75,33 +81,65 @@ export default function InventoryScreen({ route }: any) {
     setLoading(false);
   }
 
+  if (loading) {
+    return (
+      <View style={styles.mainContainer}>
+        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Inventory</Text>
-      {loading && <Text>Loading...</Text>}
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+    <View style={styles.mainContainer}>
+      <Toolbar title="Inventory" onBack={() => navigation.goBack()} variant="primary" />
+      <View style={[styles.rowHeader, { padding: 16, marginTop: 16, marginBottom: 16 }]}> 
+        <Text style={[typography.titleStrong, { flex: 1 }]}>Products</Text>
+        <TouchableOpacity>
+          <Image source={require('../../../assets/images/home/icon_filter.png')} style={styles.iconSmallest} />
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={products}
-        keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.item, selectedProduct?.id === item.id && styles.selectedItem]}
-            onPress={() => { setSelectedProduct(item); setQuantity(String(item.qty_available)); }}
-          >
-            <Text>{item.name} (Qty: {item.qty_available})</Text>
-          </TouchableOpacity>
+          <View style={styles.itemContainer}>
+            <TouchableOpacity onPress={() => { setSelectedProduct(item); setQuantity(String(item.qty_available)); setShowUpdateModal(true); }} style={styles.rowContainer}>
+              <View style={{ flex: 1, flexDirection: 'column', gap: 5 }}>
+                <View style={styles.rowContainer}>
+                  <Text style={[typography.subtitle, { flex: 1 }]}>Qty: {item.qty_available}</Text>
+                  <View style={[styles.itemContainerWithBg, { marginEnd: 8 }]}> 
+                    <Text style={[typography.subtitle]}>{item.default_code || ''}</Text>
+                  </View>
+                </View>
+                <Text style={[typography.title, { marginTop: 5 }]}>{item.name}</Text>
+              </View>
+              <Image source={require('../../../assets/images/home/icon_arrow.png')} style={styles.iconSmallest} />
+            </TouchableOpacity>
+          </View>
         )}
+        keyExtractor={item => item.id.toString()}
+        ListEmptyComponent={<Text style={styles.emptyListText}>No products found.</Text>}
       />
-      {selectedProduct && (
-        <View style={styles.updateSection}>
-          <Text>Update Quantity for {selectedProduct.name}</Text>
-          <TextInput
-            style={styles.input}
-            value={quantity}
-            onChangeText={setQuantity}
-            keyboardType="numeric"
-          />
-          <Button title="Update" onPress={updateQuantity} />
+      {/* Update Quantity Modal */}
+      {showUpdateModal && selectedProduct && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, width: '80%' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Update Quantity</Text>
+            <Text style={{ marginBottom: 8 }}>Product: {selectedProduct.name}</Text>
+            <Text style={{ marginBottom: 8 }}>Current Qty: {selectedProduct.qty_available}</Text>
+            <TextInput
+              style={styles.input}
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="numeric"
+            />
+            {message ? <Text style={{ color: 'red', marginBottom: 8 }}>{message}</Text> : null}
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
+              <TouchableOpacity onPress={() => setShowUpdateModal(false)} style={{ padding: 10 }}><Text style={{ color: '#616161' }}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={updateQuantity} style={{ backgroundColor: '#5B57C7', borderRadius: 6, padding: 10 }} disabled={!quantity}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       )}
     </View>
@@ -109,11 +147,40 @@ export default function InventoryScreen({ route }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  item: { padding: 12, borderBottomWidth: 1, borderColor: '#ccc' },
-  selectedItem: { backgroundColor: '#e0f7fa' },
-  updateSection: { marginTop: 24 },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 0,
+    margin: 0,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  itemContainer: {
+    padding: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border,
+  },
+  itemContainerWithBg: {
+    backgroundColor: '#FDF3F4',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 5,
+  },
+  iconSmallest: {
+    width: 24,
+    height: 24,
+  },
+  emptyListText: {
+    padding: 16,
+    textAlign: 'center',
+    color: '#616161',
+  },
   input: { borderWidth: 1, borderColor: '#ccc', padding: 8, marginVertical: 8, width: 100 },
-  message: { color: 'red', marginVertical: 8 },
 });
