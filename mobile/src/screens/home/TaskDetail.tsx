@@ -445,7 +445,25 @@ export default function TaskDetail({ route, navigation }: any) {
                   <View style={{ marginLeft: 12 }}>
                     <TouchableOpacity
                       style={{ backgroundColor: '#5B57C7', paddingVertical: 6, paddingHorizontal: 18, borderRadius: 8 }}
-                      onPress={() => navigation.navigate('Inventory', { productId: task.res_id, productName: task.res_name })}
+                      onPress={async () => {
+                        if (task.res_model === 'product.template') {
+                          try {
+                            const response = await fetch('http://10.0.2.2:8000/api/products');
+                            const products = await response.json();
+                            const compareName = task.name.replace(/\s*\[.*?\]/g, '').trim();
+                            // Try to match by product_id (template id) if available
+                            let variant = products.find((p: any) => p.product_tmpl_id === task.res_id);
+                            if (!variant) {
+                              variant = products.find((p: any) => p.name.replace(/\s*\[.*?\]/g, '').trim() === compareName);
+                            }
+                            if (variant) {
+                              navigation.navigate('InventoryForecast', { productId: variant.id, productName: variant.name });
+                              return;
+                            }
+                          } catch (err) {}
+                        }
+                        navigation.navigate('InventoryForecast', { productId: task.res_id, productName: task.name });
+                      }}
                     >
                       <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>ACT</Text>
                     </TouchableOpacity>

@@ -1,6 +1,41 @@
-from fastapi import FastAPI, HTTPException, Request, Body, Path
+
+import pandas as pd
+import pickle
+from fastapi import Query, FastAPI, HTTPException, Request, Body, Path
+from prophet import Prophet
 import requests
+
 app = FastAPI()
+
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
+@app.get("/api/inventory-forecast")
+def inventory_forecast(product_id: int = Query(...), periods: int = Query(30)):
+    logging.info(f"API Call: /api/inventory-forecast?product_id={product_id}&periods={periods}")
+    # Load historical data (replace with Odoo API or DB query in production)
+    try:
+        df = pd.read_csv('inventory_history.csv')
+        logging.info(f"Loaded inventory_history.csv with {len(df)} records.")
+    except Exception as e:
+        logging.error(f"Error loading inventory_history.csv: {e}")
+        return {"error": "No historical data found. Please upload inventory_history.csv."}
+    try:
+        with open(f'inventory_forecast_{product_id}.pkl', 'rb') as f:
+            model = pickle.load(f)
+        logging.info(f"Loaded model for product_id {product_id}.")
+    except Exception as e:
+        logging.warning(f"Model for product_id {product_id} not found. Training new model. Error: {e}")
+        from inventory_forecast import train_inventory_forecast_model
+        model = train_inventory_forecast_model(df, product_id)
+        logging.info(f"Trained new model for product_id {product_id}.")
+    future = model.make_future_dataframe(periods=periods)
+    forecast = model.predict(future)
+    result = forecast[['ds', 'yhat']].tail(periods).to_dict(orient='records')
+    logging.info(f"Returning forecast with {len(result)} records.")
+    return {"product_id": product_id, "forecast": result}
 
 # List all products
 @app.get("/api/products")

@@ -20,6 +20,8 @@ export default function InventoryScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [forecast, setForecast] = useState<{ ds: string; yhat: number }[] | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -42,9 +44,23 @@ export default function InventoryScreen({ route, navigation }: any) {
         setSelectedProduct(prod);
         setQuantity(String(prod.qty_available));
         if (shouldOpenModal) setShowUpdateModal(true);
+        // Fetch forecast for selected product
+        fetchForecast(prod.id);
       }
     }
   }, [productId, products]);
+
+  async function fetchForecast(productId: number) {
+    setForecastLoading(true);
+    try {
+      const response = await fetch(`http://10.0.2.2:8000/api/inventory-forecast?product_id=${productId}&periods=30`);
+      const data = await response.json();
+      setForecast(data.forecast || null);
+    } catch (err) {
+      setForecast(null);
+    }
+    setForecastLoading(false);
+  }
 
   async function fetchProducts() {
     setLoading(true);
@@ -102,7 +118,7 @@ export default function InventoryScreen({ route, navigation }: any) {
         data={products}
         renderItem={({ item }) => (
           <View style={styles.itemContainer}>
-            <TouchableOpacity onPress={() => { setSelectedProduct(item); setQuantity(String(item.qty_available)); setShowUpdateModal(true); }} style={styles.rowContainer}>
+            <TouchableOpacity onPress={() => { navigation.navigate('InventoryForecast', { productId: item.id }); }} style={styles.rowContainer}>
               <View style={{ flex: 1, flexDirection: 'column', gap: 5 }}>
                 <View style={styles.rowContainer}>
                   <Text style={[typography.subtitle, { flex: 1 }]}>Qty: {item.qty_available}</Text>
@@ -119,6 +135,28 @@ export default function InventoryScreen({ route, navigation }: any) {
         keyExtractor={item => item.id.toString()}
         ListEmptyComponent={<Text style={styles.emptyListText}>No products found.</Text>}
       />
+      {/* Inventory Forecast Section */}
+      {selectedProduct && (
+        <View style={{ padding: 16, backgroundColor: '#F5F5F5', margin: 16, borderRadius: 8 }}>
+          <Text style={[typography.titleStrong, { marginBottom: 8 }]}>Inventory Forecast (Next 30 Days)</Text>
+          {forecastLoading ? (
+            <ActivityIndicator size="small" />
+          ) : forecast && forecast.length > 0 ? (
+            <FlatList
+              data={forecast}
+              keyExtractor={item => item.ds}
+              renderItem={({ item }) => (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
+                  <Text style={{ color: '#616161' }}>{item.ds}</Text>
+                  <Text style={{ color: '#5B57C7', fontWeight: 'bold' }}>{item.yhat.toFixed(2)}</Text>
+                </View>
+              )}
+            />
+          ) : (
+            <Text style={{ color: '#616161' }}>No forecast data available.</Text>
+          )}
+        </View>
+      )}
       {/* Update Quantity Modal */}
       {showUpdateModal && selectedProduct && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>

@@ -1,0 +1,23 @@
+move_id,move_date,product_id,product_name,location_id,source_location,location_dest_id,dest_location,quantity,state
+75,8/18/2025 12:29,20,"{""en_US"": ""Pedal Bin""}",14,Inventory adjustment,18,Shelf 1,32,done
+72,8/18/2025 11:33,20,"{""en_US"": ""Pedal Bin""}",18,Shelf 1,14,Inventory adjustment,22,done
+71,8/18/2025 11:26,20,"{""en_US"": ""Pedal Bin""}",8,Stock,14,Inventory adjustment,20,done
+67,8/17/2025 9:11,45,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,65,done
+68,8/17/2025 9:11,46,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,70,done
+16,8/17/2025 9:09,44,"{""en_US"": ""Cable Management Box""}",14,Inventory adjustment,17,Shelf 2,50,done
+17,8/17/2025 9:09,44,"{""en_US"": ""Cable Management Box""}",14,Inventory adjustment,17,Shelf 2,40,done
+8,8/17/2025 9:09,12,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,45,done
+9,8/17/2025 9:09,13,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,50,done
+10,8/17/2025 9:09,14,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,55,done
+11,8/17/2025 9:09,25,"{""en_US"": ""Office Chair Black""}",14,Inventory adjustment,8,Stock,10,done
+1,8/17/2025 9:09,30,"{""en_US"": ""Individual Workplace""}",14,Inventory adjustment,8,Stock,16,done
+13,8/17/2025 9:09,33,"{""en_US"": ""Drawer""}",14,Inventory adjustment,8,Stock,80,done
+14,8/17/2025 9:09,8,"{""en_US"": ""Desk Combination""}",14,Inventory adjustment,8,Stock,60,done
+15,8/17/2025 9:09,32,"{""en_US"": ""Acoustic Bloc Screens""}",14,Inventory adjustment,8,Stock,16,done
+12,8/17/2025 9:09,26,"{""en_US"": ""Corner Desk Left Sit""}",14,Inventory adjustment,8,Stock,2,done
+2,8/17/2025 9:09,18,"{""en_US"": ""Storage Box""}",14,Inventory adjustment,8,Stock,18,done
+3,8/17/2025 9:09,17,"{""en_US"": ""Large Cabinet""}",14,Inventory adjustment,8,Stock,500,done
+4,8/17/2025 9:09,20,"{""en_US"": ""Pedal Bin""}",14,Inventory adjustment,8,Stock,12,done
+5,8/17/2025 9:09,21,"{""en_US"": ""Cabinet with Doors""}",14,Inventory adjustment,8,Stock,33,done
+6,8/17/2025 9:09,23,"{""en_US"": ""Conference Chair""}",14,Inventory adjustment,8,Stock,26,done
+7,8/17/2025 9:09,24,"{""en_US"": ""Conference Chair""}",14,Inventory adjustment,8,Stock,30,done

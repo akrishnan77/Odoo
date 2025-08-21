@@ -25,6 +25,7 @@ type RootStackParamList = {
   TaskDetails: { id: string; title?: string };
   ComingSoon: { title?: string } | undefined;
   Inventory: undefined;
+  InventoryForecast: { productId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -226,7 +227,8 @@ export default function App() {
         <Stack.Screen name="TaskDetails">
           {(props: any) => <TaskDetail {...props} token={token} />}
         </Stack.Screen>
-  <Stack.Screen name="ComingSoon" component={ComingSoon} />
+        <Stack.Screen name="InventoryForecast" component={require('./src/screens/home/InventoryForecastScreen').default} />
+        <Stack.Screen name="ComingSoon" component={ComingSoon} />
       </Stack.Navigator>
     </NavigationContainer>
   );
