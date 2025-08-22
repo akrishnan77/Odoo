@@ -65,23 +65,7 @@ export default function InventoryForecastScreen({ route, navigation }: Inventory
       <Toolbar title="Inventory Forecast" onBack={() => navigation.goBack()} variant="primary" />
       <View style={styles.contentContainer}>
         <Text style={[typography.titleStrong, { marginBottom: 4 }]}>{productName}</Text>
-        <View style={styles.sectionCard}>
-          <Text style={[typography.titleStrong, { marginBottom: 8 }]}>Update Quantity</Text>
-          {qtyLoading ? (
-            <ActivityIndicator size="small" />
-          ) : (
-            <TextInput
-              placeholder="Update Quantity"
-              value={quantity}
-              onChangeText={setQuantity}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-          )}
-          <TouchableOpacity style={[styles.updateButton, updating && styles.updateButtonDisabled]} onPress={updateQuantity} disabled={updating || qtyLoading}>
-            <Text style={styles.updateButtonText}>{updating ? "Updating..." : "Update Quantity"}</Text>
-          </TouchableOpacity>
-        </View>
+  {/* Removed quantity update section as requested */}
         <View style={styles.sectionCard}>
           <Text style={[typography.titleStrong, { marginBottom: 8 }]}>Forecast (Next 30 Days)</Text>
           {loading ? (

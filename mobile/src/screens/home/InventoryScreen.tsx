@@ -22,6 +22,7 @@ export default function InventoryScreen({ route, navigation }: any) {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [forecast, setForecast] = useState<{ ds: string; yhat: number }[] | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
+  const [expandedProductId, setExpandedProductId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -30,25 +31,28 @@ export default function InventoryScreen({ route, navigation }: any) {
   useEffect(() => {
     if (products.length > 0) {
       let prod: Product | undefined;
-      let shouldOpenModal = false;
-      if (productName) {
-        // Only compare trimmed names outside brackets
+      // Always match by id first
+      if (productId) {
+        prod = products.find(p => p.id === productId || p.id === Number(productId));
+      }
+      // If not found by id, try matching by name
+      if (!prod && productName) {
         const compareName = productName.replace(/\s*\[.*?\]/g, '').trim();
         prod = products.find(p => p.name.replace(/\s*\[.*?\]/g, '').trim() === compareName);
-        if (prod) shouldOpenModal = true;
-      }
-      if (!prod && productId) {
-        prod = products.find(p => p.id === productId || p.id === Number(productId));
       }
       if (prod) {
         setSelectedProduct(prod);
         setQuantity(String(prod.qty_available));
-        if (shouldOpenModal) setShowUpdateModal(true);
-        // Fetch forecast for selected product
-        fetchForecast(prod.id);
+        setExpandedProductId(prod.id); // Expand the card for the preselected product
+      } else {
+        setSelectedProduct(null);
+        setExpandedProductId(null);
       }
+    } else {
+      setSelectedProduct(null);
+      setExpandedProductId(null);
     }
-  }, [productId, products]);
+  }, [productId, productName, products]);
 
   async function fetchForecast(productId: number) {
     setForecastLoading(true);
@@ -105,6 +109,8 @@ export default function InventoryScreen({ route, navigation }: any) {
     );
   }
 
+  // Do not move selected product to top; just use products as is
+  const sortedProducts = products;
   return (
     <View style={styles.mainContainer}>
       <Toolbar title="Inventory" onBack={() => navigation.goBack()} variant="primary" />
@@ -115,48 +121,72 @@ export default function InventoryScreen({ route, navigation }: any) {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={products}
-        renderItem={({ item }) => (
-          <View style={styles.itemContainer}>
-            <TouchableOpacity onPress={() => { navigation.navigate('InventoryForecast', { productId: item.id }); }} style={styles.rowContainer}>
-              <View style={{ flex: 1, flexDirection: 'column', gap: 5 }}>
-                <View style={styles.rowContainer}>
-                  <Text style={[typography.subtitle, { flex: 1 }]}>Qty: {item.qty_available}</Text>
-                  <View style={[styles.itemContainerWithBg, { marginEnd: 8 }]}> 
-                    <Text style={[typography.subtitle]}>{item.default_code || ''}</Text>
+        data={sortedProducts}
+        renderItem={({ item }) => {
+          const isExpanded = expandedProductId === item.id;
+          // If selectedProduct is set (from navigation), expand its card and shift focus to input
+          const shouldAutoFocus = selectedProduct && selectedProduct.id === item.id;
+          return (
+            <View style={styles.itemContainer}>
+              <View style={styles.rowContainer}>
+                <View style={{ flex: 1, flexDirection: 'column', gap: 5 }}>
+                  <View style={styles.rowContainer}>
+                    <Text style={[typography.subtitle, { flex: 1 }]}>Qty: {item.qty_available}</Text>
+                    <View style={[styles.itemContainerWithBg, { marginEnd: 8 }]}> 
+                      <Text style={[typography.subtitle]}>{item.default_code || ''}</Text>
+                    </View>
                   </View>
+                  <Text style={[typography.title, { marginTop: 5 }]}>{item.name}</Text>
                 </View>
-                <Text style={[typography.title, { marginTop: 5 }]}>{item.name}</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('InventoryForecast', { productId: item.id })}>
+                  <Image source={require('../../../assets/images/home/icon_arrow.png')} style={styles.iconSmallest} />
+                </TouchableOpacity>
               </View>
-              <Image source={require('../../../assets/images/home/icon_arrow.png')} style={styles.iconSmallest} />
-            </TouchableOpacity>
-          </View>
-        )}
+              {(isExpanded || shouldAutoFocus) && (
+                <View style={{ marginTop: 12, marginLeft: 32 }}>
+                  <Text style={{ marginBottom: 8 }}>Update Quantity:</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={selectedProduct && selectedProduct.id === item.id ? quantity : String(item.qty_available)}
+                    onChangeText={text => {
+                      setSelectedProduct(item);
+                      setQuantity(text);
+                    }}
+                    keyboardType="numeric"
+                    autoFocus={!!shouldAutoFocus}
+                  />
+                  <TouchableOpacity
+                    onPress={updateQuantity}
+                    style={{ backgroundColor: '#5B57C7', borderRadius: 6, padding: 10, marginTop: 8 }}
+                    disabled={!quantity}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>Update</Text>
+                  </TouchableOpacity>
+                  {message ? <Text style={{ color: 'red', marginTop: 8 }}>{message}</Text> : null}
+                </View>
+              )}
+              <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                <TouchableOpacity onPress={() => {
+                  if (expandedProductId === item.id) {
+                    setExpandedProductId(null);
+                  } else {
+                    setExpandedProductId(item.id);
+                    setSelectedProduct(item);
+                    setQuantity(String(item.qty_available));
+                  }
+                }}>
+                  <Text style={{ color: '#5B57C7', textDecorationLine: 'underline', fontSize: 16 }}>
+                    Update Quantity
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        }}
         keyExtractor={item => item.id.toString()}
         ListEmptyComponent={<Text style={styles.emptyListText}>No products found.</Text>}
       />
-      {/* Inventory Forecast Section */}
-      {selectedProduct && (
-        <View style={{ padding: 16, backgroundColor: '#F5F5F5', margin: 16, borderRadius: 8 }}>
-          <Text style={[typography.titleStrong, { marginBottom: 8 }]}>Inventory Forecast (Next 30 Days)</Text>
-          {forecastLoading ? (
-            <ActivityIndicator size="small" />
-          ) : forecast && forecast.length > 0 ? (
-            <FlatList
-              data={forecast}
-              keyExtractor={item => item.ds}
-              renderItem={({ item }) => (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                  <Text style={{ color: '#616161' }}>{item.ds}</Text>
-                  <Text style={{ color: '#5B57C7', fontWeight: 'bold' }}>{item.yhat.toFixed(2)}</Text>
-                </View>
-              )}
-            />
-          ) : (
-            <Text style={{ color: '#616161' }}>No forecast data available.</Text>
-          )}
-        </View>
-      )}
+  {/* Forecast section removed as requested */}
       {/* Update Quantity Modal */}
       {showUpdateModal && selectedProduct && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>

@@ -450,11 +450,12 @@ export default function TaskDetail({ route, navigation }: any) {
                           try {
                             const response = await fetch('http://10.0.2.2:8000/api/products');
                             const products = await response.json();
-                            const compareName = task.name.replace(/\s*\[.*?\]/g, '').trim();
-                            // Try to match by product_id (template id) if available
+                            const compareName = task.res_name.replace(/\s*\[.*?\]/g, '').trim();
+                            // Try to match by product_tmpl_id first
                             let variant = products.find((p: any) => p.product_tmpl_id === task.res_id);
+                            // If not found, match by stripped name
                             if (!variant) {
-                              variant = products.find((p: any) => p.name.replace(/\s*\[.*?\]/g, '').trim() === compareName);
+                              variant = products.find((p: any) => p.name.replace(/\s*\[.*?\]/g, '').trim().toLowerCase() === compareName.toLowerCase());
                             }
                             if (variant) {
                               navigation.navigate('Inventory', { productId: variant.id, productName: variant.name });
