@@ -457,12 +457,12 @@ export default function TaskDetail({ route, navigation }: any) {
                               variant = products.find((p: any) => p.name.replace(/\s*\[.*?\]/g, '').trim() === compareName);
                             }
                             if (variant) {
-                              navigation.navigate('InventoryForecast', { productId: variant.id, productName: variant.name });
+                              navigation.navigate('Inventory', { productId: variant.id, productName: variant.name });
                               return;
                             }
                           } catch (err) {}
                         }
-                        navigation.navigate('InventoryForecast', { productId: task.res_id, productName: task.name });
+                        navigation.navigate('Inventory', { productId: task.res_id, productName: task.name });
                       }}
                     >
                       <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>ACT</Text>

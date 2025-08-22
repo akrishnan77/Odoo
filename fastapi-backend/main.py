@@ -22,20 +22,18 @@ def inventory_forecast(product_id: int = Query(...), periods: int = Query(30)):
     except Exception as e:
         logging.error(f"Error loading inventory_history.csv: {e}")
         return {"error": "No historical data found. Please upload inventory_history.csv."}
+    from inventory_forecast import train_inventory_forecast_model
     try:
-        with open(f'inventory_forecast_{product_id}.pkl', 'rb') as f:
-            model = pickle.load(f)
-        logging.info(f"Loaded model for product_id {product_id}.")
-    except Exception as e:
-        logging.warning(f"Model for product_id {product_id} not found. Training new model. Error: {e}")
-        from inventory_forecast import train_inventory_forecast_model
         model = train_inventory_forecast_model(df, product_id)
         logging.info(f"Trained new model for product_id {product_id}.")
-    future = model.make_future_dataframe(periods=periods)
-    forecast = model.predict(future)
-    result = forecast[['ds', 'yhat']].tail(periods).to_dict(orient='records')
-    logging.info(f"Returning forecast with {len(result)} records.")
-    return {"product_id": product_id, "forecast": result}
+        future = model.make_future_dataframe(periods=periods)
+        forecast = model.predict(future)
+        result = forecast[['ds', 'yhat']].tail(periods).to_dict(orient='records')
+        logging.info(f"Returning forecast with {len(result)} records.")
+        return {"product_id": product_id, "forecast": result}
+    except Exception as err:
+        logging.error(f"Could not train or predict for product_id {product_id}: {err}")
+        return {"error": f"Could not generate forecast for product_id {product_id}."}
 
 # List all products
 @app.get("/api/products")
