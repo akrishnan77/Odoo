@@ -125,6 +125,7 @@ export default function TaskScreen({ token, onOpenTask, onSignOut }: { token: st
     const statusText = getStatusText(item.status);
     const statusColor = getStatusTextColor(item.status);
     const priorityColor = getPriorityTextColor(item.importance);
+    const isInventoryPicking = item.res_model === 'stock.picking';
     return (
       <View style={styles.itemContainer}>
         <TouchableOpacity onPress={() => {
@@ -140,6 +141,18 @@ export default function TaskScreen({ token, onOpenTask, onSignOut }: { token: st
             </View>
             <Text style={[typography.title, { marginTop: 5 }]}>{item.title}</Text>
             <Text style={[typography.subtitle, { color: statusColor }]}>{statusText}</Text>
+            {/* Show module name */}
+            {item.res_model && (
+              <Text style={[typography.subtitle, { color: '#5B57C7', marginTop: 2 }]}>Module: {item.res_model}</Text>
+            )}
+            {isInventoryPicking && (
+              <TouchableOpacity
+                style={{ backgroundColor: '#5B57C7', paddingVertical: 6, paddingHorizontal: 18, borderRadius: 8, marginTop: 8 }}
+                onPress={() => onOpenTask(item.id, item.title)}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>ACT</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <Image source={require('../../../assets/images/home/icon_arrow.png')} style={styles.iconSmallest} />
         </TouchableOpacity>

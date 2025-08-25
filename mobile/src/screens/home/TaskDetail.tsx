@@ -427,7 +427,7 @@ export default function TaskDetail({ route, navigation }: any) {
   return (
     <ScrollView style={styles.container} bounces={false} overScrollMode="never">
       <View style={styles.content}>
-        <Toolbar title={title || 'Task Details'} onBack={() => navigation.goBack()} variant="primary" />
+  <Toolbar title={'Task Details'} onBack={() => navigation.goBack()} variant="primary" />
         <View style={styles.taskDetailscard}>
           <View style={styles.titleContainer}>
             <View style={styles.titleRow}>
@@ -438,39 +438,6 @@ export default function TaskDetail({ route, navigation }: any) {
               <Text style={[styles.status, { color: getStatusColor(task.status) }]}> 
                 {getStatusText(task.status)}
               </Text>
-              
-              {/* ACT Button for product.template, between status and priority */}
-              {task.res_model === 'product.template' && (
-                (() => { console.log('ACT button block entered', task); return (
-                  <View style={{ marginLeft: 12 }}>
-                    <TouchableOpacity
-                      style={{ backgroundColor: '#5B57C7', paddingVertical: 6, paddingHorizontal: 18, borderRadius: 8 }}
-                      onPress={async () => {
-                        if (task.res_model === 'product.template') {
-                          try {
-                            const response = await fetch('http://10.0.2.2:8000/api/products');
-                            const products = await response.json();
-                            const compareName = task.res_name.replace(/\s*\[.*?\]/g, '').trim();
-                            // Try to match by product_tmpl_id first
-                            let variant = products.find((p: any) => p.product_tmpl_id === task.res_id);
-                            // If not found, match by stripped name
-                            if (!variant) {
-                              variant = products.find((p: any) => p.name.replace(/\s*\[.*?\]/g, '').trim().toLowerCase() === compareName.toLowerCase());
-                            }
-                            if (variant) {
-                              navigation.navigate('Inventory', { productId: variant.id, productName: variant.name });
-                              return;
-                            }
-                          } catch (err) {}
-                        }
-                        navigation.navigate('Inventory', { productId: task.res_id, productName: task.name });
-                      }}
-                    >
-                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>ACT</Text>
-                    </TouchableOpacity>
-                  </View>
-                ); })()
-              )}
               <View style={styles.priorityChip}>
                 <Text style={[styles.priorityText, getPriorityColor(task.importance)]}>
                   {getPriorityText(task.importance)}
@@ -478,12 +445,11 @@ export default function TaskDetail({ route, navigation }: any) {
               </View>
             </View>
           </View>
+          {/* Task Description at the top */}
           <View style={styles.divider} />
           {showMore && (
             <>
               <View style={styles.detailRow}>
-                <Text style={styles.label}>Assigned To:</Text>
-                <Text style={styles.value}>{task.assignedTo || 'N/A'}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.label}>Due By:</Text>
@@ -502,6 +468,34 @@ export default function TaskDetail({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
+        {/* Complete Task button as a separate section after View More/View Less */}
+        {['product.template', 'stock.picking', 'stock.inventory', 'stock.scrap', 'stock.move'].includes(task.res_model) && (
+          <View style={{ marginTop: 8, marginBottom: 8, alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 8, padding: 16 }}>
+            <TouchableOpacity
+              style={{ backgroundColor: '#5B57C7', paddingVertical: 10, paddingHorizontal: 32, borderRadius: 8 }}
+              onPress={async () => {
+                if (task.res_model === 'product.template') {
+                  try {
+                    const response = await fetch('http://10.0.2.2:8000/api/products');
+                    const products = await response.json();
+                    const compareName = task.res_name.replace(/\s*\[.*?\]/g, '').trim();
+                    let variant = products.find((p: any) => p.product_tmpl_id === task.res_id);
+                    if (!variant) {
+                      variant = products.find((p: any) => p.name.replace(/\s*\[.*?\]/g, '').trim().toLowerCase() === compareName.toLowerCase());
+                    }
+                    if (variant) {
+                      navigation.navigate('Inventory', { productId: variant.id, productName: variant.name });
+                      return;
+                    }
+                  } catch (err) {}
+                }
+                navigation.navigate('Inventory', { productId: task.res_id, productName: task.res_name });
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Complete Task</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {/* Checklist Section */}
         <View style={styles.checklistContainer}>
           <View style={styles.checkListHeader}>

@@ -162,7 +162,7 @@ def get_project_task_by_id(task_id: str = Path(...)):
                 return {
                     "id": f"activity-{a['id']}",
                     "name": f"Activity: {a.get('summary', '')}",
-                    "description": f"Assigned to: {a.get('user_id', [''])[1] if a.get('user_id') else ''}",
+                    "description": a.get('summary', '') or f"Assigned to: {a.get('user_id', [''])[1] if a.get('user_id') else ''}",
                     "date_deadline": a.get('date_deadline', ''),
                     "priority": '',
                     "stage_id": '',
