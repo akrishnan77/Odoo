@@ -158,58 +158,18 @@ export default function InventoryScreen({ route, navigation }: any) {
                   <TouchableOpacity
                     onPress={updateQuantity}
                     style={{ backgroundColor: '#5B57C7', borderRadius: 6, padding: 10, marginTop: 8 }}
-                    disabled={!quantity}
                   >
                     <Text style={{ color: '#fff', fontWeight: 'bold' }}>Update</Text>
                   </TouchableOpacity>
-                  {message ? <Text style={{ color: 'red', marginTop: 8 }}>{message}</Text> : null}
                 </View>
               )}
-              <View style={{ flexDirection: 'row', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => {
-                  if (expandedProductId === item.id) {
-                    setExpandedProductId(null);
-                  } else {
-                    setExpandedProductId(item.id);
-                    setSelectedProduct(item);
-                    setQuantity(String(item.qty_available));
-                  }
-                }}>
-                  <Text style={{ color: '#5B57C7', textDecorationLine: 'underline', fontSize: 16 }}>
-                    Update Quantity
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
           );
         }}
-        keyExtractor={item => item.id.toString()}
-        ListEmptyComponent={<Text style={styles.emptyListText}>No products found.</Text>}
+        keyExtractor={item => String(item.id)}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        getItemLayout={(data, index) => ({ length: 100, offset: 100 * index, index })}
       />
-  {/* Forecast section removed as requested */}
-      {/* Update Quantity Modal */}
-      {showUpdateModal && selectedProduct && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, width: '80%' }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Update Quantity</Text>
-            <Text style={{ marginBottom: 8 }}>Product: {selectedProduct.name}</Text>
-            <Text style={{ marginBottom: 8 }}>Current Qty: {selectedProduct.qty_available}</Text>
-            <TextInput
-              style={styles.input}
-              value={quantity}
-              onChangeText={setQuantity}
-              keyboardType="numeric"
-            />
-            {message ? <Text style={{ color: 'red', marginBottom: 8 }}>{message}</Text> : null}
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
-              <TouchableOpacity onPress={() => setShowUpdateModal(false)} style={{ padding: 10 }}><Text style={{ color: '#616161' }}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity onPress={updateQuantity} style={{ backgroundColor: '#5B57C7', borderRadius: 6, padding: 10 }} disabled={!quantity}>
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Update</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
     </View>
   );
 }

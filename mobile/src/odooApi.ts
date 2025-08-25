@@ -1,3 +1,32 @@
+export async function getOdooProducts(): Promise<any[]> {
+  try {
+    const response = await fetch('http://10.0.2.2:8000/api/products');
+    if (!response.ok) throw new Error('Failed to fetch products');
+    return await response.json();
+  } catch (err) {
+    console.error('[FRONTEND] Failed to fetch Odoo products:', err);
+    return [];
+  }
+}
+export async function createOdooTask({ name, description, date_deadline, priority = 'normal' }: {
+  name: string;
+  description?: string;
+  date_deadline?: string;
+  priority?: string;
+}): Promise<any> {
+  try {
+    const res = await fetch('http://10.0.2.2:8000/api/create-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, date_deadline, priority })
+    });
+    if (!res.ok) throw new Error('Failed to create task');
+    return await res.json();
+  } catch (err) {
+    console.error('[FRONTEND] Failed to create Odoo task:', err);
+    throw err;
+  }
+}
 export async function getOdooTaskById(id: string): Promise<any> {
   try {
   const url = `http://10.0.2.2:8000/api/project-tasks/${id}`;

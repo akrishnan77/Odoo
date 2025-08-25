@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity,
 import { colors, typography } from '../../theme';
 import { FloatingButtonAdd } from '../../ui/FloatingButton';
 import { getOdooTasks } from '../../odooApi';
+import { createOdooTask } from '../../odooApi';
 import { Toolbar } from '../../ui/Toolbar';
 import { useNavigation } from '@react-navigation/native';
 
@@ -18,17 +19,11 @@ export default function TaskScreen({ token, onOpenTask, onSignOut }: { token: st
     setCreating(true);
     setCreateError(null);
     try {
-      // Call backend API to create task
-  const res = await fetch('http://10.0.2.2:8000/api/create-task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newTaskTitle,
-          description: newTaskDesc,
-          date_deadline: newTaskDue,
-        })
+      await createOdooTask({
+        name: newTaskTitle,
+        description: newTaskDesc,
+        date_deadline: newTaskDue,
       });
-      if (!res.ok) throw new Error('Failed to create task');
       setShowCreateModal(false);
       setNewTaskTitle('');
       setNewTaskDesc('');

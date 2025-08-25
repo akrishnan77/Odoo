@@ -30,6 +30,45 @@ def inventory_forecast(product_id: int = Query(...), periods: int = Query(30)):
         forecast = model.predict(future)
         result = forecast[['ds', 'yhat']].tail(periods).to_dict(orient='records')
         logging.info(f"Returning forecast with {len(result)} records.")
+
+        # ML agent logic: if any forecasted quantity < 50, create a replenishment task in Odoo
+        threshold = 50
+        low_points = [r for r in result if r['yhat'] < threshold]
+        if low_points:
+            # Get product name from Odoo
+            cookies = get_odoo_session()
+            url = f"{ODOO_URL}/web/dataset/call_kw/product.product/search_read"
+            payload = {
+                "params": {
+                    "model": "product.product",
+                    "method": "search_read",
+                    "args": [[['id', '=', product_id]]],
+                    "kwargs": {"fields": ["id", "name"]}
+                }
+            }
+            res = requests.post(url, json=payload, cookies=cookies)
+            product_name = f"Product {product_id}"
+            if res.status_code == 200 and res.json().get("result"):
+                product_name = res.json()["result"][0]["name"]
+            # Create replenishment task in Odoo
+            task_url = f"{ODOO_URL}/web/dataset/call_kw/project.task/create"
+            task_payload = {
+                "params": {
+                    "model": "project.task",
+                    "method": "create",
+                    "args": [{
+                        "name": f"Replenishment needed for {product_name}",
+                        "description": f"Forecasted inventory below {threshold} for product {product_name}. Please review and restock."
+                    }],
+                    "kwargs": {}
+                }
+            }
+            task_res = requests.post(task_url, json=task_payload, cookies=cookies)
+            if task_res.status_code == 200 and task_res.json().get('result'):
+                logging.info(f"Created replenishment task for product {product_id} in Odoo. Task ID: {task_res.json()['result']}")
+            else:
+                logging.error(f"Failed to create replenishment task for product {product_id} in Odoo. Status: {task_res.status_code}, Response: {task_res.text}")
+
         return {"product_id": product_id, "forecast": result}
     except Exception as err:
         logging.error(f"Could not train or predict for product_id {product_id}: {err}")

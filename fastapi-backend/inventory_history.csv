@@ -16,4 +16,4 @@ move_id,move_date,product_id,product_name,location_id,source_location,location_d
 15,8/17/2025 9:09,32,"{""en_US"": ""Acoustic Bloc Screens""}",14,Inventory adjustment,8,Stock,-16,done
 67,8/17/2025 9:11,45,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,-65,done
 68,8/17/2025 9:11,46,"{""en_US"": ""Customizable Desk""}",14,Inventory adjustment,8,Stock,-70,done
-71,8/18/2025 11:26,20,"{""en_US"": ""Pedal Bin""}",8,Stock,14,Inventory adjustment,50,done
+71,8/18/2025 11:26,20,"{""en_US"": ""Pedal Bin""}",8,Stock,14,Inventory adjustment,10,done

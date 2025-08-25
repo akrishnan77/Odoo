@@ -321,6 +321,7 @@ const styles = StyleSheet.create({
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { getOdooTaskById } from '../../odooApi';
+import { getOdooProducts } from '../../odooApi';
 import { Toolbar } from '../../ui/Toolbar';
 // Import assets (update paths as needed)
 const TitleIcon = require('../../assets/images/task/icon_task_title.png');
@@ -476,8 +477,7 @@ export default function TaskDetail({ route, navigation }: any) {
               onPress={async () => {
                 if (task.res_model === 'product.template') {
                   try {
-                    const response = await fetch('http://10.0.2.2:8000/api/products');
-                    const products = await response.json();
+                    const products = await getOdooProducts();
                     const compareName = task.res_name.replace(/\s*\[.*?\]/g, '').trim();
                     let variant = products.find((p: any) => p.product_tmpl_id === task.res_id);
                     if (!variant) {
