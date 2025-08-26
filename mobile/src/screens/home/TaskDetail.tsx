@@ -338,6 +338,8 @@ export default function TaskDetail({ route, navigation }: any) {
   }, [id]);
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState<any>(null);
+  // Print the task object every render
+  console.log('[TaskDetail] task:', task);
   const [error, setError] = useState<string | null>(null);
   // Static checklist data
   const staticChecklistData = [
@@ -470,7 +472,17 @@ export default function TaskDetail({ route, navigation }: any) {
           </View>
         </View>
         {/* Complete Task button as a separate section after View More/View Less */}
-        {['product.template', 'stock.picking', 'stock.inventory', 'stock.scrap', 'stock.move'].includes(task.res_model) && (
+        {task.res_model === 'maintenance.request' ? (
+          <View style={{ marginTop: 8, marginBottom: 8, alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 8, padding: 16 }}>
+            <TouchableOpacity
+              style={{ backgroundColor: '#5B57C7', paddingVertical: 10, paddingHorizontal: 32, borderRadius: 8 }}
+              onPress={() => navigation.navigate('MaintenanceTaskDetail', { taskId: task.res_id })}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Complete Task</Text>
+            </TouchableOpacity>
+          </View>
+        ) :
+        (['product.template', 'stock.picking', 'stock.inventory', 'stock.scrap', 'stock.move'].includes(task.res_model) && (
           <View style={{ marginTop: 8, marginBottom: 8, alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 8, padding: 16 }}>
             <TouchableOpacity
               style={{ backgroundColor: '#5B57C7', paddingVertical: 10, paddingHorizontal: 32, borderRadius: 8 }}
@@ -495,7 +507,7 @@ export default function TaskDetail({ route, navigation }: any) {
               <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Complete Task</Text>
             </TouchableOpacity>
           </View>
-        )}
+        ))}
         {/* Checklist Section */}
         <View style={styles.checklistContainer}>
           <View style={styles.checkListHeader}>

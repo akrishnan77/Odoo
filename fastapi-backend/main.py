@@ -1,16 +1,128 @@
-
+from fastapi import Form, Body, Query, FastAPI, HTTPException, Request, Path
+import requests
 import pandas as pd
 import pickle
-from fastapi import Query, FastAPI, HTTPException, Request, Body, Path
 from prophet import Prophet
-import requests
-
-app = FastAPI()
-
 import logging
 
-# Configure logging
+app = FastAPI()
 logging.basicConfig(level=logging.INFO)
+
+# New endpoint: update maintenance request notes and status, and mark Odoo task as done
+@app.post("/api/maintenance-request/{id}/complete")
+def complete_maintenance_request(id: int, notes: str = Form(...)):
+    logging.info(f"[BACKEND] Completing maintenance.request id: {id} with notes: {notes}")
+    cookies = get_odoo_session()
+    # Update maintenance request: set stage_id to 'repaired' and add notes
+    # You may need to adjust 'repaired_stage_id' to match your Odoo config
+    repaired_stage_id = 3  # Example: replace with your actual 'repaired' stage id
+    url = f"{ODOO_URL}/web/dataset/call_kw/maintenance.request/write"
+    payload = {
+        "params": {
+            "model": "maintenance.request",
+            "method": "write",
+            "args": [[id], {"stage_id": repaired_stage_id, "notes": notes}],
+            "kwargs": {}
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    logging.info(f"[BACKEND] Odoo maintenance.request write response: {res.status_code} {res.text}")
+    if res.status_code != 200 or not res.json().get("result"):
+        raise HTTPException(status_code=500, detail="Failed to update maintenance request")
+
+    # Optionally, mark the corresponding Odoo project.task as done
+    # You may need to fetch the maintenance.request to get the task_id
+    read_url = f"{ODOO_URL}/web/dataset/call_kw/maintenance.request/search_read"
+    read_payload = {
+        "params": {
+            "model": "maintenance.request",
+            "method": "search_read",
+            "args": [[['id', '=', id]]],
+            "kwargs": {"fields": ["task_id"]}
+        }
+    }
+    read_res = requests.post(read_url, json=read_payload, cookies=cookies)
+    logging.info(f"[BACKEND] Odoo maintenance.request read response: {read_res.status_code} {read_res.text}")
+    if read_res.status_code == 200 and read_res.json().get("result"):
+        task_id = read_res.json()["result"][0].get("task_id")
+        if task_id and isinstance(task_id, list) and len(task_id) > 0:
+            # Mark project.task as done (stage_id=done_stage_id)
+            done_stage_id = 4  # Example: replace with your actual 'done' stage id
+            task_url = f"{ODOO_URL}/web/dataset/call_kw/project.task/write"
+            task_payload = {
+                "params": {
+                    "model": "project.task",
+                    "method": "write",
+                    "args": [[task_id[0]], {"stage_id": done_stage_id}],
+                    "kwargs": {}
+                }
+            }
+            task_res = requests.post(task_url, json=task_payload, cookies=cookies)
+            logging.info(f"[BACKEND] Odoo project.task write response: {task_res.status_code} {task_res.text}")
+    return {"success": True, "id": id, "notes": notes}
+
+from fastapi import Body
+from fastapi import Query, FastAPI, HTTPException, Request, Path
+import requests
+import pandas as pd
+import pickle
+from prophet import Prophet
+import logging
+
+app = FastAPI()
+logging.basicConfig(level=logging.INFO)
+
+# Get maintenance request details
+@app.get("/api/maintenance-request/{id}")
+def get_maintenance_request(id: int):
+    logging.info(f"[BACKEND] Fetching maintenance.request with id: {id}")
+    cookies = get_odoo_session()
+    url = f"{ODOO_URL}/web/dataset/call_kw/maintenance.request/search_read"
+    payload = {
+        "params": {
+            "model": "maintenance.request",
+            "method": "search_read",
+            "args": [[['id', '=', id]]],
+            "kwargs": {"fields": ["id", "name", "description", "stage_id"]}
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    logging.info(f"[BACKEND] Odoo response status: {res.status_code}")
+    logging.info(f"[BACKEND] Odoo response body: {res.text}")
+    try:
+        result = res.json().get("result")
+    except Exception as e:
+        logging.error(f"[BACKEND] Failed to parse Odoo response: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse Odoo response")
+    if res.status_code != 200 or not result:
+        logging.warning(f"[BACKEND] Maintenance request not found for id: {id}")
+        raise HTTPException(status_code=404, detail="Maintenance request not found")
+    logging.info(f"[BACKEND] Maintenance request found: {result[0]}")
+    return result[0]
+
+# Update maintenance request status
+@app.post("/api/maintenance-request/{id}/update-status")
+def update_maintenance_request_status(id: int, body: dict = Body(...)):
+    stage_id = body.get("stage_id")
+    if stage_id not in [2, 3]:
+        raise HTTPException(status_code=400, detail="Invalid stage_id")
+    cookies = get_odoo_session()
+    url = f"{ODOO_URL}/web/dataset/call_kw/maintenance.request/write"
+    payload = {
+        "params": {
+            "model": "maintenance.request",
+            "method": "write",
+            "args": [[id], {"stage_id": stage_id}],
+            "kwargs": {}
+        }
+    }
+    res = requests.post(url, json=payload, cookies=cookies)
+    if res.status_code == 200 and res.json().get("result"):
+        return {"success": True, "id": id, "stage_id": stage_id}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to update maintenance request status")
+
+
 
 @app.get("/api/inventory-forecast")
 def inventory_forecast(product_id: int = Query(...), periods: int = Query(30)):

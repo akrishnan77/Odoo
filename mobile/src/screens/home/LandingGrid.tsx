@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList } from 'react
 
 const gridItems = [
   { title: 'Workforce Management', image: require('../../../assets/images/home/img11.png') },
-  { title: 'Clienteling', image: require('../../../assets/images/home/img22.png') },
+  { title: 'Maintenance', image: require('../../../assets/images/home/img22.png') },
   { title: 'Inventory', image: require('../../../assets/images/home/img33.png') },
   { title: 'Store Operations', image: require('../../../assets/images/home/img44.png') },
   { title: 'Orders & Return', image: require('../../../assets/images/home/img55.png') },
